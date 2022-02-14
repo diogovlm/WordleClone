@@ -1,15 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, SafeAreaView, Alert } from 'react-native';
 import { colors, CLEAR, ENTER } from './src/constants';
 import Keyboard from './src/components/Keyboard';
 
 const NUMBER_OF_TRIES = 6;
 
-//Literally copy an array so we can use it to update a state
 const copyArray = (arr) => {
   return [...arr.map((rows) => [...rows])];
-};
+}; //Literally copy an array so we can use it to update a state
 
 export default function App() {
   const word = 'hello';
@@ -20,9 +19,39 @@ export default function App() {
   ); //generate dinamically rows with blank values based on number of tries and word length
   const [curRow, setCurRow] = useState(0);
   const [curCol, setCurCol] = useState(0);
+  const [gameState, setGameState] = useState('playing'); //won, lost, playing
 
-  //Function to decide what to do according to the key pressed
+  useEffect(() => {
+    if (curRow > 0) {
+      checkGameState();
+    }
+  }, [curRow]); // Every time curRow is updated this useEffect will be called
+
+  const checkGameState = () => {
+    if (checkIfWon()) {
+      Alert.alert('Yay', 'You won!');
+      setGameState('won');
+    } else if (checkIfLost()) {
+      Alert.alert('Meh', 'Try again Tomorrow!');
+      setGameState('lost');
+    }
+  };
+
+  const checkIfWon = () => {
+    const row = rows[curRow - 1];
+
+    return row.every((letter, i) => letter === letters[i]);
+  }; //Return true if every letter from the row matches de array with the word splitted
+
+  const checkIfLost = () => {
+    return curRow === NUMBER_OF_TRIES;
+  }; //Return true if the current row gets to the number of tries
+
   const onKeyPressed = (key) => {
+    if (gameState !== 'playing') {
+      return;
+    } //Cannot keep playing if the game state is not playing
+
     const updatedRows = copyArray(rows);
 
     if (key === CLEAR) {
@@ -48,7 +77,7 @@ export default function App() {
       setRows(updatedRows);
       setCurCol(curCol + 1);
     }
-  };
+  }; //Function to decide what to do according to the key pressed
 
   const isCellActive = (row, col) => {
     return row === curRow && col === curCol;
@@ -72,7 +101,7 @@ export default function App() {
     return rows.flatMap((row, i) =>
       row.filter((cell, j) => getCellBGColor(i, j) === color)
     );
-  }; //flatMap maps everything and merge the results. Then it will filter with the return of BG Color function
+  }; //flatMap maps everything and merge the results. Then it will filter based on the return of BG Color function
 
   const greenCaps = getAllLettersWithColor(colors.primary);
   const yellowCaps = getAllLettersWithColor(colors.secondary);
