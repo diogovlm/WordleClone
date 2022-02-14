@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, SafeAreaView, Alert } from 'react-native';
-import { colors, CLEAR, ENTER } from './src/constants';
+import { colors, CLEAR, ENTER, colorsToEmoji } from './src/constants';
 import Keyboard from './src/components/Keyboard';
+import * as Clipboard from 'expo-clipboard';
 
 const NUMBER_OF_TRIES = 6;
 
@@ -29,12 +30,24 @@ export default function App() {
 
   const checkGameState = () => {
     if (checkIfWon()) {
-      Alert.alert('Yay', 'You won!');
+      Alert.alert('Yay', 'You won!', [{ text: 'Share', onPress: shareScore }]);
       setGameState('won');
     } else if (checkIfLost()) {
       Alert.alert('Meh', 'Try again Tomorrow!');
       setGameState('lost');
     }
+  };
+
+  const shareScore = () => {
+    const textShare = rows
+      .map((row, i) =>
+        row.map((cell, j) => colorsToEmoji[getCellBGColor(i, j)]).join('')
+      )
+      .filter((row) => row)
+      .join('\n'); //Map all the rows and give colorful squares according to background and then filter only the rows that contain anything
+
+    Clipboard.setString(textShare);
+    Alert.alert('Copied Successfully', 'Share your score on your social media');
   };
 
   const checkIfWon = () => {
