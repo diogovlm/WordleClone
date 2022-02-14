@@ -54,6 +54,30 @@ export default function App() {
     return row === curRow && col === curCol;
   };
 
+  const getCellBGColor = (row, col) => {
+    const letter = rows[row][col];
+    if (row >= curRow) {
+      return colors.black;
+    } //Make sure the current row will not give the answer
+    if (letter === letters[col]) {
+      return colors.primary;
+    } //Right answer : Green
+    if (letters.includes(letter)) {
+      return colors.secondary;
+    } //Right letter and wrong place : Yellow
+    return colors.darkgrey;
+  };
+
+  const getAllLettersWithColor = (color) => {
+    return rows.flatMap((row, i) =>
+      row.filter((cell, j) => getCellBGColor(i, j) === color)
+    );
+  }; //flatMap maps everything and merge the results. Then it will filter with the return of BG Color function
+
+  const greenCaps = getAllLettersWithColor(colors.primary);
+  const yellowCaps = getAllLettersWithColor(colors.secondary);
+  const greyCaps = getAllLettersWithColor(colors.darkgrey);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style='light' />
@@ -61,7 +85,7 @@ export default function App() {
       <View style={styles.map}>
         {rows.map((row, i) => (
           <View key={`row-${i}`} style={styles.row}>
-            {row.map((cell, j) => (
+            {row.map((letter, j) => (
               <View
                 key={`cell-${i}=${j}`}
                 style={[
@@ -70,16 +94,22 @@ export default function App() {
                     borderColor: isCellActive(i, j)
                       ? colors.lightgrey
                       : colors.darkgrey,
+                    backgroundColor: getCellBGColor(i, j),
                   },
                 ]}
               >
-                <Text style={styles.cellText}>{cell.toUpperCase()}</Text>
+                <Text style={styles.cellText}>{letter.toUpperCase()}</Text>
               </View>
             ))}
           </View>
         ))}
       </View>
-      <Keyboard onKeyPressed={onKeyPressed} />
+      <Keyboard
+        onKeyPressed={onKeyPressed}
+        greenCaps={greenCaps}
+        yellowCaps={yellowCaps}
+        greyCaps={greyCaps}
+      />
     </SafeAreaView>
   );
 }
@@ -99,7 +129,6 @@ const styles = StyleSheet.create({
   map: {
     marginVertical: 20,
     alignSelf: 'stretch',
-    height: 100,
   },
   row: {
     alignSelf: 'stretch',
