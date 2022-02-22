@@ -5,14 +5,16 @@ import Keyboard from '../Keyboard';
 import * as Clipboard from 'expo-clipboard';
 import words from '../../words';
 import styles from './Game.styles';
-import { copyArray, getDayOfTheYear } from '../../utils';
+import { copyArray, getDayOfTheYear, getDayKey } from '../../utils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const NUMBER_OF_TRIES = 6;
 
-const dayOfTheYar = getDayOfTheYear();
+const dayOfTheYear = getDayOfTheYear();
+const dayKey = getDayKey();
 
 const Game = () => {
-  const word = words[dayOfTheYar];
+  const word = words[dayOfTheYear].toLowerCase();
   const letters = word.split('');
 
   const [rows, setRows] = useState(
@@ -21,12 +23,62 @@ const Game = () => {
   const [curRow, setCurRow] = useState(0);
   const [curCol, setCurCol] = useState(0);
   const [gameState, setGameState] = useState('playing'); //won, lost, playing
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (curRow > 0) {
       checkGameState();
     }
   }, [curRow]); // Every time curRow is updated this useEffect will be called
+
+  useEffect(() => {
+    if (loaded) {
+      persistState();
+    }
+  }, [rows, curCol, curRow, gameState]); //Save progress at every change ingame
+
+  useEffect(() => {
+    readState();
+  }, []); //Read storage at start of component
+
+  const persistState = async () => {
+    const dataForToday = {
+      rows,
+      curCol,
+      curRow,
+      gameState,
+    };
+
+    try {
+      const existingStateString = await AsyncStorage.getItem('@game');
+      const existingState = existingStateString
+        ? JSON.parse(existingStateString)
+        : {}; //If there is data it will parse, otherwise will give blank
+
+      existingState[dayKey] = dataForToday;
+
+      const dataString = JSON.stringify(existingState);
+      await AsyncStorage.setItem('@game', dataString);
+    } catch (e) {
+      console.log('Failed to write data to async storage', e);
+    }
+  }; //Write all the state variables in async storage
+
+  const readState = async () => {
+    const dataString = await AsyncStorage.getItem('@game');
+    try {
+      const data = JSON.parse(dataString);
+      const day = data[dayKey];
+      setRows(day.rows);
+      setCurCol(day.curCol);
+      setCurRow(day.curRow);
+      setGameState(day.gameState);
+    } catch (e) {
+      console.log("Couldn't parse the state");
+    }
+
+    setLoaded(true);
+  }; //Read async storage to know if there is a game in progress
 
   const checkGameState = () => {
     if (checkIfWon()) {
@@ -36,7 +88,7 @@ const Game = () => {
       Alert.alert('Meh', 'Try again Tomorrow!');
       setGameState('lost');
     }
-  };
+  }; //Check current game state - won, lost, playing
 
   const shareScore = () => {
     const textShare = rows
@@ -48,7 +100,7 @@ const Game = () => {
 
     Clipboard.setString(textShare);
     Alert.alert('Copied Successfully', 'Share your score on your social media');
-  };
+  }; //Make a copy of result on clipboard and it is ready to share
 
   const checkIfWon = () => {
     const row = rows[curRow - 1];
@@ -94,7 +146,7 @@ const Game = () => {
 
   const isCellActive = (row, col) => {
     return row === curRow && col === curCol;
-  };
+  }; //Position of the current cell
 
   const getCellBGColor = (row, col) => {
     const letter = rows[row][col];
@@ -108,7 +160,7 @@ const Game = () => {
       return colors.secondary;
     } //Right letter and wrong place : Yellow
     return colors.darkgrey;
-  };
+  }; //Set background color of each cell
 
   const getAllLettersWithColor = (color) => {
     return rows.flatMap((row, i) =>
