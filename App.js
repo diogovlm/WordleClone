@@ -7,7 +7,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style='light' />
-      <Text style={styles.title}>WORDLE</Text>
+      <Text style={styles.title}>WHO'S THAT POKEMON</Text>
       <Game />
     </SafeAreaView>
   );
@@ -21,8 +21,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.lightgrey,
-    fontSize: 32,
+    fontSize: 20,
     fontWeight: 'bold',
     letterSpacing: 7,
+    marginTop: 30,
   },
 });

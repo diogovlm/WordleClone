@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Text, View, Alert } from 'react-native';
-import { colors, CLEAR, ENTER, colorsToEmoji } from '../../constants';
+import { Text, View } from 'react-native';
+import { colors, CLEAR, ENTER } from '../../constants';
 import Keyboard from '../Keyboard';
-import * as Clipboard from 'expo-clipboard';
 import words from '../../words';
 import styles from './Game.styles';
 import { copyArray, getDayOfTheYear, getDayKey } from '../../utils';
@@ -25,6 +24,7 @@ const Game = () => {
   const [curCol, setCurCol] = useState(0);
   const [gameState, setGameState] = useState('playing'); //won, lost, playing
   const [loaded, setLoaded] = useState(false);
+  const [nextScreen, setNextScreen] = useState(false);
 
   useEffect(() => {
     if (curRow > 0) {
@@ -36,7 +36,7 @@ const Game = () => {
     if (loaded) {
       persistState();
     }
-  }, [rows, curCol, curRow, gameState]); //Save progress at every change ingame
+  }, [curRow, gameState]); //Save progress at every change ingame
 
   useEffect(() => {
     readState();
@@ -63,6 +63,9 @@ const Game = () => {
     } catch (e) {
       console.log('Failed to write data to async storage', e);
     }
+    if (gameState !== 'playing') {
+      setNextScreen(true);
+    }
   }; //Write all the state variables in async storage
 
   const readState = async () => {
@@ -77,31 +80,16 @@ const Game = () => {
     } catch (e) {
       console.log("Couldn't parse the state");
     }
-
     setLoaded(true);
   }; //Read async storage to know if there is a game in progress
 
   const checkGameState = () => {
-    if (checkIfWon()) {
-      Alert.alert('Yay', 'You won!', [{ text: 'Share', onPress: shareScore }]);
+    if (checkIfWon() && gameState !== 'won') {
       setGameState('won');
-    } else if (checkIfLost()) {
-      Alert.alert('Meh', 'Try again Tomorrow!');
+    } else if (checkIfLost() && gameState !== 'lost') {
       setGameState('lost');
     }
   }; //Check current game state - won, lost, playing
-
-  const shareScore = () => {
-    const textShare = rows
-      .map((row, i) =>
-        row.map((cell, j) => colorsToEmoji[getCellBGColor(i, j)]).join('')
-      )
-      .filter((row) => row)
-      .join('\n'); //Map all the rows and give colorful squares according to background and then filter only the rows that contain anything
-
-    Clipboard.setString(textShare);
-    Alert.alert('Copied Successfully', 'Share your score on your social media');
-  }; //Make a copy of result on clipboard and it is ready to share
 
   const checkIfWon = () => {
     const row = rows[curRow - 1];
@@ -173,9 +161,15 @@ const Game = () => {
   const yellowCaps = getAllLettersWithColor(colors.secondary);
   const greyCaps = getAllLettersWithColor(colors.darkgrey);
 
-  if (gameState !== 'playing') {
-    return <EndScreen won={gameState === 'won'} />;
-  }
+  if (nextScreen) {
+    return (
+      <EndScreen
+        rows={rows}
+        getCellBGColor={getCellBGColor}
+        pokemon={word.toUpperCase()}
+      />
+    );
+  } //Check if the player finished playing and then send to endgame screen
 
   return (
     <>
